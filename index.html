@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="記帳本">
+<meta name="theme-color" content="#f6f4ef">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>我的記帳本</title>
+<style>
+:root{
+  --bg:#f6f4ef;--card:#fff;--ink:#1f1d1a;--sub:#7a746b;--line:#e8e3da;
+  --out:#d9534f;--in:#2e9d6a;--acc:#1f1d1a;--chip:#efebe3;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#171614;--card:#22201d;--ink:#f1ede6;--sub:#9d968b;--line:#34312c;--out:#ff7b72;--in:#4cc38a;--acc:#f1ede6;--chip:#2d2a26}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"PingFang HK","Noto Sans HK","Microsoft JhengHei",sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(110px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
+h1{font-size:20px;margin:0;letter-spacing:.5px}
+.month{display:flex;align-items:center;gap:6px}
+.month button{border:0;background:var(--chip);color:var(--ink);width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer}
+.month span{min-width:92px;text-align:center;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.bal .lbl{color:var(--sub);font-size:13px}
+.bal .big{font-size:30px;font-weight:700;margin:2px 0 12px;font-variant-numeric:tabular-nums}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2 div{background:var(--chip);border-radius:12px;padding:10px 12px}
+.row2 b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.in{color:var(--in)}.out{color:var(--out)}
+h2{font-size:14px;color:var(--sub);font-weight:600;margin:0 0 10px}
+.cat{display:grid;grid-template-columns:72px 1fr 82px;align-items:center;gap:8px;margin:7px 0;font-size:14px}
+.bar{height:8px;background:var(--chip);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--out);border-radius:6px}
+.cat .amt{text-align:right;font-variant-numeric:tabular-nums}
+.day{font-size:12px;color:var(--sub);margin:14px 4px 6px;display:flex;justify-content:space-between}
+.item{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border-bottom:0}
+.ico{width:36px;height:36px;border-radius:10px;background:var(--chip);display:grid;place-items:center;font-size:18px;flex:none}
+.item .t{flex:1;min-width:0}
+.item .t div:first-child{font-weight:600}
+.item .t div:last-child{color:var(--sub);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .a{font-weight:600;font-variant-numeric:tabular-nums}
+.empty{text-align:center;color:var(--sub);padding:26px 0}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));border:0;background:var(--acc);color:var(--bg);font-size:16px;font-weight:600;padding:14px 30px;border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer}
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center;z-index:5}
+.mask.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 16px 24px;max-height:92vh;overflow:auto}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--chip);border-radius:12px;padding:4px;margin-bottom:14px}
+.seg button{border:0;background:none;color:var(--sub);padding:9px;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.amtin{display:flex;align-items:baseline;gap:8px;border-bottom:2px solid var(--line);margin-bottom:14px;padding-bottom:6px}
+.amtin span{font-size:20px;color:var(--sub);font-weight:600}
+.amtin input{border:0;outline:0;background:none;color:var(--ink);font-size:34px;font-weight:700;width:100%;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chips button{border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:7px 11px;border-radius:20px;font-size:14px;cursor:pointer}
+.chips button.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+label.f{display:block;font-size:13px;color:var(--sub);margin-bottom:12px}
+label.f input{display:block;width:100%;margin-top:4px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px}
+.btns{display:flex;gap:10px;margin-top:6px}
+.btns button{flex:1;border:0;padding:13px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer}
+.save{background:var(--acc);color:var(--bg)}
+.cancel{background:var(--chip);color:var(--ink)}
+.del{background:none;color:var(--out);flex:0 0 auto!important;padding:13px 10px!important}
+.status{font-size:12px;color:var(--sub);text-align:center;margin-top:8px}
+.tools .xl{width:100%;border:0;background:var(--in);color:#fff;padding:13px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer}
+.xlmsg{font-size:13px;text-align:center;margin-top:8px;min-height:0}
+.xlmsg:empty{display:none}
+.tools .sm{display:flex;justify-content:center;gap:18px;margin-top:10px;font-size:13px}
+.tools .sm button,.tools .sm label{border:0;background:none;color:var(--sub);text-decoration:underline;cursor:pointer;font-size:13px;padding:4px}
+.photo{margin-bottom:14px}
+.photo .add{display:block;text-align:center;border:1.5px dashed var(--line);border-radius:12px;padding:14px;color:var(--sub);cursor:pointer;font-size:15px}
+.photo .box{position:relative;display:inline-block}
+.photo img{max-width:100%;max-height:220px;border-radius:12px;display:block;cursor:zoom-in;border:1px solid var(--line)}
+.photo .rm{position:absolute;top:6px;right:6px;border:0;background:rgba(0,0,0,.6);color:#fff;border-radius:14px;padding:4px 10px;font-size:13px;cursor:pointer}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}
+.viewer.on{display:flex}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain}
+button:disabled{opacity:.6}
+.err{color:var(--out);font-size:13px;min-height:18px;margin-top:-6px;margin-bottom:6px}
+html[data-theme="cream"]{--bg:#f6f4ef;--card:#ffffff;--ink:#1f1d1a;--sub:#7a746b;--line:#e8e3da;--chip:#efebe3;--acc:#1f1d1a;--out:#d9534f;--in:#2e9d6a;}
+html[data-theme="pink"]{--bg:#fdeef2;--card:#ffffff;--ink:#3a1f28;--sub:#9a6b78;--line:#f5d5de;--chip:#fbe1e8;--acc:#c2456b;--out:#d9534f;--in:#2e9d6a;}
+html[data-theme="mint"]{--bg:#e9f6f0;--card:#ffffff;--ink:#16332a;--sub:#5f8577;--line:#cfe8dc;--chip:#dcf0e6;--acc:#1f7a5a;--out:#d9534f;--in:#2e9d6a;}
+html[data-theme="sky"]{--bg:#eaf3fc;--card:#ffffff;--ink:#14283d;--sub:#5d7894;--line:#cfe0f2;--chip:#dbe9f7;--acc:#2563a8;--out:#d9534f;--in:#2e9d6a;}
+html[data-theme="lav"]{--bg:#f1edfb;--card:#ffffff;--ink:#271d3d;--sub:#7a6e96;--line:#ddd5f2;--chip:#e7e1f8;--acc:#6a4bc4;--out:#d9534f;--in:#2e9d6a;}
+html[data-theme="sun"]{--bg:#fdf8e3;--card:#ffffff;--ink:#3a3214;--sub:#8a7d4c;--line:#f0e6b8;--chip:#f7efc9;--acc:#b08a00;--out:#d9534f;--in:#2e9d6a;}
+html[data-theme="dark"]{--bg:#171614;--card:#22201d;--ink:#f1ede6;--sub:#9d968b;--line:#34312c;--chip:#2d2a26;--acc:#f1ede6;--out:#ff7b72;--in:#4cc38a;}
+html[data-theme="navy"]{--bg:#0f1724;--card:#18233a;--ink:#e8eef8;--sub:#8fa1bf;--line:#26334d;--chip:#202d47;--acc:#7fb2ff;--out:#ff7b72;--in:#4cc38a;}
+html[data-theme="dark"],html[data-theme="navy"]{color-scheme:dark}
+.fab{color:var(--card)!important}
+.save{color:var(--card)!important}
+.chips button.on{color:var(--card)!important}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.themebtn{border:0;background:var(--chip);width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer}
+.themes{display:none;flex-wrap:wrap;gap:10px;margin:-4px 0 14px}
+.themes.on{display:flex}
+.sw{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;color:var(--ink);font-size:12px;cursor:pointer;padding:0}
+.sw i{width:40px;height:40px;border-radius:50%;border:3px solid var(--line);display:block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.sw.on i{border-color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>我的記帳本</h1>
+    <div class="hdr-r"><button class="themebtn" id="themebtn" aria-label="背景顏色">🎨</button>
+    <div class="month">
+      <button id="prev" aria-label="上個月">‹</button>
+      <span id="mlabel"></span>
+      <button id="next" aria-label="下個月">›</button>
+    </div></div>
+  </header>
+  <div class="themes" id="themes"></div>
+
+  <div class="card bal">
+    <div class="lbl">本月結餘</div>
+    <div class="big" id="bal">RM 0.00</div>
+    <div class="row2">
+      <div><span class="lbl">收入</span><b class="in" id="tin">RM 0.00</b></div>
+      <div><span class="lbl">支出</span><b class="out" id="tout">RM 0.00</b></div>
+    </div>
+  </div>
+
+  <div class="card" id="catcard"><h2>支出分類</h2><div id="cats"></div></div>
+
+  <div class="card"><h2>明細</h2><div id="list"></div></div>
+  <div class="card tools">
+    <button class="xl" id="xl">📊 下載本月 Excel</button>
+    <div class="xlmsg" id="xlmsg"></div>
+    <div class="sm">
+      <button id="xlall">匯出全部（備份）</button>
+      <label>匯入備份<input type="file" id="imp" accept=".xlsx,.xls" hidden></label>
+    </div>
+  </div>
+  <div class="status" id="status">載入中…</div>
+</div>
+
+<button class="fab" id="add">＋ 記一筆</button>
+
+<div class="viewer" id="viewer"><img id="vimg" alt="收據"></div>
+
+<div class="mask" id="mask">
+  <div class="sheet">
+    <div class="seg"><button data-t="out" class="on">支出</button><button data-t="in">收入</button></div>
+    <div class="amtin"><span>RM</span><input id="amt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>
+    <div class="chips" id="chips"></div>
+    <label class="f">備註<input id="note" type="text" maxlength="60" placeholder="例如：午餐 nasi lemak"></label>
+    <label class="f">日期<input id="date" type="date"></label>
+    <div class="photo">
+      <label class="add" id="padd"><span id="ptxt">📷 加收據相</span><input type="file" id="pfile" accept="image/*" hidden></label>
+      <div class="box" id="pbox" style="display:none"><img id="pimg" alt="收據"><button class="rm" id="prm">移除</button></div>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="btns">
+      <button class="del" id="del" style="display:none">刪除</button>
+      <button class="cancel" id="cancel">取消</button>
+      <button class="save" id="save">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATS={
+  out:[["餐飲","🍜"],["交通","🚗"],["購物","🛍️"],["日用","🧴"],["住屋","🏠"],["水電網","💡"],["娛樂","🎮"],["醫療","💊"],["教育","📚"],["其他","📦"]],
+  in:[["薪金","💼"],["花紅","🎁"],["副業","🧑‍💻"],["投資","📈"],["其他","💰"]]
+};
+const icon=(t,c)=>((CATS[t]||[]).find(x=>x[0]===c)||[0,"📦"])[1];
+const $=id=>document.getElementById(id);
+const fmt=n=>"RM "+n.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pad=n=>String(n).padStart(2,"0");
+const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())};
+const newId=()=>"e"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const WD=["日","一","二","三","四","五","六"];
+const TYPE_ZH={in:"收入",out:"支出"};
+
+let entries={};
+let cur=new Date(); cur.setDate(1);
+let form={t:"out",cat:"餐飲",id:null,photo:undefined,pw:0,ph:0};
+let formUrl=null;
+
+/* ---------- entries: localStorage ---------- */
+const LS="ledger_entries_v1";
+let lsOK=true;
+function lsLoad(){try{return JSON.parse(localStorage.getItem(LS)||"{}")}catch(e){return {}}}
+function lsSave(){try{localStorage.setItem(LS,JSON.stringify(entries))}catch(e){setStatus("⚠️ 儲存空間滿咗，請下載備份")}}
+
+/* ---------- photos: IndexedDB ---------- */
+let idb=null; const memPhotos={};
+function openIDB(){
+  return new Promise(res=>{
+    try{
+      const r=indexedDB.open("ledger_photos",1);
+      r.onupgradeneeded=()=>r.result.createObjectStore("p");
+      r.onsuccess=()=>res(r.result); r.onerror=()=>res(null);
+    }catch(e){res(null)}
+  });
+}
+function tx(mode,fn){
+  return new Promise((res,rej)=>{
+    const t=idb.transaction("p",mode), s=t.objectStore("p"), q=fn(s);
+    t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);
+  });
+}
+// store raw bytes, not Blob: iOS Safari loses Blob data kept in IndexedDB ("The object can not be found here")
+async function photoPut(id,blob){
+  const rec={b:await blob.arrayBuffer(),t:blob.type||"image/jpeg"};
+  if(idb)return tx("readwrite",s=>s.put(rec,id));
+  memPhotos[id]=rec;
+}
+async function photoGet(id){
+  let v=null;
+  try{v=idb?await tx("readonly",s=>s.get(id)):memPhotos[id]}catch(e){return null}
+  if(!v)return null;
+  try{
+    if(v.b)return new Blob([v.b],{type:v.t});
+    if(v instanceof Blob){const buf=await v.arrayBuffer();const rec={b:buf,t:v.type||"image/jpeg"};if(idb)tx("readwrite",s=>s.put(rec,id)).catch(()=>{});return new Blob([buf],{type:rec.t})}
+  }catch(e){}
+  return null; // unreadable (old Safari-damaged photo)
+}
+const photoDel=id=>idb?tx("readwrite",s=>s.delete(id)).catch(()=>{}):(delete memPhotos[id],Promise.resolve());
+
+function loadImg(blob){
+  return new Promise((res,rej)=>{const u=URL.createObjectURL(blob),i=new Image();
+    i.onload=()=>{res(i);setTimeout(()=>URL.revokeObjectURL(u),0)};i.onerror=()=>{URL.revokeObjectURL(u);rej()};i.src=u});
+}
+async function compress(file){
+  const img=await loadImg(file), M=1400;
+  const k=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));
+  const w=Math.round(img.naturalWidth*k), h=Math.round(img.naturalHeight*k);
+  const c=document.createElement("canvas");c.width=w;c.height=h;
+  const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,w,h);g.drawImage(img,0,0,w,h);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.78));
+  return {blob,w,h};
+}
+
+async function init(){
+  try{localStorage.setItem("__t","1");localStorage.removeItem("__t")}catch(e){lsOK=false}
+  entries=lsLoad(); render();
+  idb=await openIDB();
+  if(!lsOK)setStatus("⚠️ 呢個瀏覽器唔俾儲存，關咗頁面資料會冇咗，請即刻下載 Excel");
+  else if(!idb)setStatus("⚠️ 呢個瀏覽器唔俾存相，收據相只會保留到關頁面為止");
+  else setStatus("資料只存喺呢部機嘅瀏覽器 · 記得每月下載 Excel 做備份");
+}
+function setStatus(s){$("status").textContent=s}
+function say(s){$("xlmsg").textContent=s;setStatus(s)}
+
+/* ---------- render ---------- */
+function render(){
+  const ym=cur.getFullYear()+"-"+pad(cur.getMonth()+1);
+  $("mlabel").textContent=cur.getFullYear()+"年"+(cur.getMonth()+1)+"月";
+  $("xl").textContent="📊 下載 "+(cur.getMonth()+1)+"月 Excel";
+  const list=Object.entries(entries).filter(([,e])=>e.date&&e.date.startsWith(ym))
+    .sort((a,b)=>b[1].date.localeCompare(a[1].date)||(b[1].ts||0)-(a[1].ts||0));
+  let tin=0,tout=0;const bycat={};
+  list.forEach(([,e])=>{ if(e.type==="in")tin+=e.amount; else {tout+=e.amount;bycat[e.cat]=(bycat[e.cat]||0)+e.amount} });
+  $("tin").textContent=fmt(tin);$("tout").textContent=fmt(tout);
+  const b=tin-tout;$("bal").textContent=(b<0?"-":"")+fmt(Math.abs(b));$("bal").className="big "+(b<0?"out":"");
+
+  const cats=Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+  $("catcard").style.display=cats.length?"":"none";
+  const max=cats.length?cats[0][1]:1;
+  $("cats").innerHTML="";
+  cats.forEach(([c,v])=>{
+    const r=document.createElement("div");r.className="cat";
+    r.innerHTML=`<span></span><div class="bar"><i style="width:${(v/max*100).toFixed(1)}%"></i></div><span class="amt"></span>`;
+    r.children[0].textContent=icon("out",c)+" "+c;
+    r.children[2].textContent=Math.round(v/tout*100)+"%";
+    $("cats").appendChild(r);
+  });
+
+  const L=$("list");L.innerHTML="";
+  if(!list.length){L.innerHTML='<div class="empty">呢個月仲未有記錄<br>撳下面「記一筆」開始啦</div>';return}
+  let lastDay=null;
+  const dayTot={};list.forEach(([,e])=>{dayTot[e.date]=(dayTot[e.date]||0)+(e.type==="in"?e.amount:-e.amount)});
+  list.forEach(([id,e])=>{
+    if(e.date!==lastDay){
+      lastDay=e.date;const d=new Date(e.date+"T00:00");
+      const h=document.createElement("div");h.className="day";
+      const l=document.createElement("span");l.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 星期"+WD[d.getDay()];
+      const r=document.createElement("span");const t=dayTot[e.date];r.textContent=(t<0?"-":"+")+fmt(Math.abs(t));
+      h.append(l,r);L.appendChild(h);
+    }
+    const it=document.createElement("div");it.className="item";
+    it.innerHTML=`<div class="ico"></div><div class="t"><div></div><div></div></div><div class="a"></div>`;
+    it.querySelector(".ico").textContent=icon(e.type,e.cat);
+    it.querySelector(".t div:first-child").textContent=e.cat+(e.photo?" 🧾":"");
+    it.querySelector(".t div:last-child").textContent=e.note||" ";
+    const a=it.querySelector(".a");a.textContent=(e.type==="in"?"+":"-")+fmt(e.amount);a.classList.add(e.type);
+    it.onclick=()=>openForm(id);
+    L.appendChild(it);
+  });
+}
+
+/* ---------- form ---------- */
+function drawChips(){
+  const c=$("chips");c.innerHTML="";
+  CATS[form.t].forEach(([n,i])=>{
+    const b=document.createElement("button");b.textContent=i+" "+n;
+    if(n===form.cat)b.className="on";
+    b.onclick=()=>{form.cat=n;drawChips()};c.appendChild(b);
+  });
+  document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on",b.dataset.t===form.t));
+}
+function showPhoto(blob){
+  if(formUrl){URL.revokeObjectURL(formUrl);formUrl=null}
+  if(blob){formUrl=URL.createObjectURL(blob);$("pimg").src=formUrl;$("pbox").style.display="";$("padd").style.display="none"}
+  else{$("pimg").removeAttribute("src");$("pbox").style.display="none";$("padd").style.display=""}
+}
+async function openForm(id){
+  $("err").textContent="";
+  if(id&&entries[id]){
+    const e=entries[id];form={t:e.type,cat:e.cat,id,photo:undefined,pw:e.pw||0,ph:e.ph||0};
+    $("amt").value=e.amount;$("note").value=e.note||"";$("date").value=e.date;$("del").style.display="";
+    showPhoto(null);
+    if(e.photo){const b=await photoGet(id);if(form.id===id){showPhoto(b);if(!b)$("err").textContent="呢張收據相讀唔到（舊版問題），請重新加一次"}}
+  }else{
+    form={t:"out",cat:"餐飲",id:null,photo:undefined,pw:0,ph:0};$("amt").value="";$("note").value="";
+    const now=new Date(),same=now.getFullYear()===cur.getFullYear()&&now.getMonth()===cur.getMonth();
+    $("date").value=same?todayStr():cur.getFullYear()+"-"+pad(cur.getMonth()+1)+"-01";
+    $("del").style.display="none";showPhoto(null);
+  }
+  drawChips();$("mask").classList.add("on");
+}
+const close=()=>{$("mask").classList.remove("on");showPhoto(null)};
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{form.t=b.dataset.t;form.cat=CATS[form.t][0][0];drawChips()});
+$("cancel").onclick=close;
+$("mask").onclick=e=>{if(e.target===$("mask"))close()};
+$("pfile").onchange=async ev=>{
+  const f=ev.target.files[0];ev.target.value="";if(!f)return;
+  $("ptxt").textContent="處理緊張相…";
+  try{const r=await compress(f);form.photo=r.blob;form.pw=r.w;form.ph=r.h;showPhoto(r.blob)}
+  catch(e){$("err").textContent="讀唔到呢張相，請試另一張"}
+  $("ptxt").textContent="📷 加收據相";
+};
+$("prm").onclick=()=>{form.photo=null;showPhoto(null)};
+$("pimg").onclick=()=>{if(formUrl){$("vimg").src=formUrl;$("viewer").classList.add("on")}};
+$("viewer").onclick=()=>$("viewer").classList.remove("on");
+
+$("save").onclick=async()=>{
+  const amt=Math.round(parseFloat($("amt").value)*100)/100;
+  if(!(amt>0)){$("err").textContent="請輸入金額";return}
+  if(!$("date").value){$("err").textContent="請揀日期";return}
+  const id=form.id||newId(), old=entries[id];
+  let hasPhoto=old?!!old.photo:false;
+  try{
+    if(form.photo){await photoPut(id,form.photo);hasPhoto=true}
+    else if(form.photo===null&&hasPhoto){await photoDel(id);hasPhoto=false}
+  }catch(e){$("err").textContent="張相存唔到（可能儲存空間唔夠）";return}
+  const e={type:form.t,amount:amt,cat:form.cat,note:$("note").value.trim(),date:$("date").value,ts:old?old.ts:Date.now()};
+  if(hasPhoto){e.photo=true;e.pw=form.pw;e.ph=form.ph}
+  entries[id]=e;lsSave();
+  const [y,m]=e.date.split("-");cur=new Date(+y,+m-1,1);
+  close();render();
+};
+$("del").onclick=async()=>{
+  if($("del").dataset.c!=="1"){$("del").dataset.c="1";$("del").textContent="確定刪除？";setTimeout(()=>{$("del").dataset.c="";$("del").textContent="刪除"},3000);return}
+  $("del").dataset.c="";$("del").textContent="刪除";
+  const id=form.id;close();
+  if(entries[id]&&entries[id].photo)await photoDel(id);
+  delete entries[id];lsSave();render();
+};
+$("add").onclick=()=>openForm(null);
+$("prev").onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);render()};
+$("next").onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);render()};
+
+/* ---------- tiny built-in XLSX writer/reader (no external library) ---------- */
+const XL=(()=>{
+  const enc=new TextEncoder();
+  const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+  const crc32=u=>{let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0};
+  function zip(files){ // [{name, data:Uint8Array}] stored, no compression
+    const parts=[],cd=[];let off=0;
+    for(const f of files){
+      const nm=enc.encode(f.name),d=f.data,crc=crc32(d);
+      const h=new DataView(new ArrayBuffer(30));
+      h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);
+      h.setUint16(10,0,true);h.setUint16(12,0x21,true);h.setUint32(14,crc,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);
+      h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+      parts.push(new Uint8Array(h.buffer),nm,d);
+      const c=new DataView(new ArrayBuffer(46));
+      c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);
+      c.setUint16(12,0,true);c.setUint16(14,0x21,true);c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);
+      c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+      cd.push(new Uint8Array(c.buffer),nm);
+      off+=30+nm.length+d.length;
+    }
+    const cdSize=cd.reduce((s,u)=>s+u.length,0);
+    const e=new DataView(new ArrayBuffer(22));
+    e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);
+    e.setUint32(12,cdSize,true);e.setUint32(16,off,true);
+    const all=[...parts,...cd,new Uint8Array(e.buffer)],out=new Uint8Array(all.reduce((s,u)=>s+u.length,0));
+    let p=0;for(const u of all){out.set(u,p);p+=u.length}return out;
+  }
+  const esc=s=>String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const colName=n=>{let s="";while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26)}return s};
+  const parseRef=a=>{const m=/^([A-Z]+)(\d+)$/.exec(a);let c=0;for(const ch of m[1])c=c*26+ch.charCodeAt(0)-64;return {c,r:+m[2]}};
+  const b64u8=b=>{const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u};
+  const rgb=c=>c&&c.argb?c.argb:null;
+
+  class Cell{constructor(){this.value=null;this.numFmt=null;this.font=null;this.fill=null;this.alignment=null;this.border=null}}
+  class Row{
+    constructor(ws,r){this.ws=ws;this.r=r;this.cells={};this.height=null;this.alignment=null}
+    getCell(i){return this.cells[i]||(this.cells[i]=new Cell())}
+    eachCell(o,f){const all=typeof o==="object"&&o.includeEmpty;if(typeof o==="function")f=o;
+      const mx=Math.max(this.ws.cols.length,...Object.keys(this.cells).map(Number),0);
+      for(let i=1;i<=mx;i++){if(all||(this.cells[i]&&this.cells[i].value!=null))f(this.getCell(i),i)}}
+  }
+  class Sheet{
+    constructor(name,opt){this.name=name;this.rows={};this.cols=[];this.merges=[];this.cf=[];this.imgs=[];this.autoFilter=null;
+      this.views=(opt&&opt.views)||[]}
+    set columns(cs){this.cols=cs;if(cs.some(c=>c.header)){const r=this.getRow(1);cs.forEach((c,i)=>{if(c.header)r.getCell(i+1).value=c.header})}}
+    get columns(){return this.cols}
+    getRow(i){return this.rows[i]||(this.rows[i]=new Row(this,i))}
+    get rowCount(){const k=Object.keys(this.rows).map(Number).filter(r=>Object.values(this.rows[r].cells).some(c=>c.value!=null));return k.length?Math.max(...k):0}
+    addRow(vals){const r=this.getRow(this.rowCount+1);vals.forEach((v,i)=>r.getCell(i+1).value=v);return r}
+    getCell(a){const {c,r}=parseRef(a);return this.getRow(r).getCell(c)}
+    mergeCells(rng){this.merges.push(rng)}
+    addConditionalFormatting(o){this.cf.push(o)}
+    addImage(id,o){this.imgs.push({id,...o})}
+  }
+  class Workbook{
+    constructor(){this.sheets=[];this.media=[];this.xlsx={writeBuffer:async()=>this._write()}}
+    addWorksheet(n,o){const s=new Sheet(n,o);this.sheets.push(s);return s}
+    addImage(o){this.media.push({data:o.buffer?new Uint8Array(o.buffer):b64u8(o.base64),ext:o.extension==="png"?"png":"jpeg"});return this.media.length-1}
+    _write(){
+      // ---- styles registry
+      const fonts=['<font><sz val="11"/><name val="Calibri"/><family val="2"/></font>'],fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'],
+            borders=['<border><left/><right/><top/><bottom/><diagonal/></border>'],numFmts=[],xfs=['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'],dxfs=[];
+      const idx=(arr,x,base=0)=>{let i=arr.indexOf(x);if(i<0){arr.push(x);i=arr.length-1}return i+base};
+      const fontXml=f=>`<font>${f.bold?"<b/>":""}${f.italic?"<i/>":""}<sz val="${f.size||11}"/>${rgb(f.color)?`<color rgb="${rgb(f.color)}"/>`:""}<name val="Calibri"/><family val="2"/></font>`;
+      const borderXml=b=>{const s=k=>b[k]?`<${k} style="${b[k].style||"thin"}">${rgb(b[k].color)?`<color rgb="${rgb(b[k].color)}"/>`:""}</${k}>`:`<${k}/>`;return `<border>${s("left")}${s("right")}${s("top")}${s("bottom")}<diagonal/></border>`};
+      const BUILTIN={"0":1,"0.00":2,"0%":9,"0.00%":10};
+      const styleId=(cell,row)=>{
+        const al=cell.alignment||row.alignment;
+        if(!cell.font&&!cell.fill&&!cell.numFmt&&!al&&!cell.border)return 0;
+        const fid=cell.font?idx(fonts,fontXml(cell.font)):0;
+        const fl=cell.fill&&rgb(cell.fill.fgColor)?idx(fills,`<fill><patternFill patternType="solid"><fgColor rgb="${rgb(cell.fill.fgColor)}"/><bgColor indexed="64"/></patternFill></fill>`):0;
+        const bid=cell.border?idx(borders,borderXml(cell.border)):0;
+        let nid=0;if(cell.numFmt){nid=BUILTIN[cell.numFmt]!=null?BUILTIN[cell.numFmt]:idx(numFmts,cell.numFmt,164)}
+        const a=al?`<alignment${al.horizontal?` horizontal="${al.horizontal}"`:""}${al.vertical?` vertical="${al.vertical==="middle"?"center":al.vertical}"`:""}${al.wrapText?' wrapText="1"':""}/>`:"";
+        const x=`<xf numFmtId="${nid}" fontId="${fid}" fillId="${fl}" borderId="${bid}" xfId="0"${nid?' applyNumberFormat="1"':""}${fid?' applyFont="1"':""}${fl?' applyFill="1"':""}${bid?' applyBorder="1"':""}${a?' applyAlignment="1">'+a+"</xf>":"/>"}`;
+        return idx(xfs,x);
+      };
+      const files=[],ct=[],wbRels=[],sheetsXml=[],defNames=[];
+      let imgCount=0;
+      this.sheets.forEach((ws,si)=>{
+        const n=si+1;
+        // cells
+        const rowNums=Object.keys(ws.rows).map(Number).sort((a,b)=>a-b);let maxC=ws.cols.length||1,maxR=1;
+        let sd="";
+        for(const r of rowNums){
+          const row=ws.rows[r];const ks=Object.keys(row.cells).map(Number).sort((a,b)=>a-b);
+          let cx="";
+          for(const c of ks){
+            const cell=row.cells[c],s=styleId(cell,row),ref=colName(c)+r,sa=s?` s="${s}"`:"";
+            const v=cell.value;maxC=Math.max(maxC,c);
+            if(v==null||v===""){if(s)cx+=`<c r="${ref}"${sa}/>`;continue}
+            maxR=Math.max(maxR,r);
+            if(typeof v==="number")cx+=`<c r="${ref}"${sa}><v>${isFinite(v)?v:0}</v></c>`;
+            else if(typeof v==="object"&&v.formula!=null){const res=v.result;
+              cx+=typeof res==="string"?`<c r="${ref}"${sa} t="str"><f>${esc(v.formula)}</f><v>${esc(res)}</v></c>`:`<c r="${ref}"${sa}><f>${esc(v.formula)}</f>${res!=null?`<v>${res}</v>`:""}</c>`}
+            else cx+=`<c r="${ref}"${sa} t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+          }
+          if(cx||row.height)sd+=`<row r="${r}"${row.height?` ht="${row.height}" customHeight="1"`:""}>${cx}</row>`;
+        }
+        const v=ws.views[0]||{};
+        const pane=v.state==="frozen"&&v.ySplit?`<pane ySplit="${v.ySplit}" topLeftCell="A${v.ySplit+1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/>`:"";
+        const sv=`<sheetViews><sheetView workbookViewId="0"${v.showGridLines===false?' showGridLines="0"':""}${si===0?' tabSelected="1"':""}>${pane}</sheetView></sheetViews>`;
+        const cols=ws.cols.length?"<cols>"+ws.cols.map((c,i)=>`<col min="${i+1}" max="${i+1}" width="${c.width||10}" customWidth="1"/>`).join("")+"</cols>":"";
+        let tail="";
+        if(ws.autoFilter){const rng=ws.autoFilter.from+":"+ws.autoFilter.to;tail+=`<autoFilter ref="${rng}"/>`;
+          defNames.push(`<definedName name="_xlnm._FilterDatabase" localSheetId="${si}" hidden="1">'${esc(ws.name)}'!$${rng.replace(/([A-Z]+)(\d+)/g,"$1$$$2").replace(":",":$")}</definedName>`)}
+        if(ws.merges.length)tail+=`<mergeCells count="${ws.merges.length}">${ws.merges.map(m=>`<mergeCell ref="${m}"/>`).join("")}</mergeCells>`;
+        let prio=1;
+        ws.cf.forEach(o=>{tail+=`<conditionalFormatting sqref="${o.ref}">`+o.rules.map(r=>{
+          const f=r.style&&r.style.font||{};const d=idx(dxfs,`<dxf><font>${f.bold?"<b/>":""}${rgb(f.color)?`<color rgb="${rgb(f.color)}"/>`:""}</font></dxf>`);
+          return `<cfRule type="expression" dxfId="${d}" priority="${prio++}"><formula>${esc(r.formulae[0])}</formula></cfRule>`}).join("")+"</conditionalFormatting>"});
+        tail+='<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>';
+        let sheetRels="";
+        if(ws.imgs.length){
+          tail+='<drawing r:id="rId1"/>';
+          sheetRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${n}.xml"/></Relationships>`;
+          let anchors="",drels="";
+          ws.imgs.forEach((im,k)=>{
+            const m=this.media[im.id],E=9525;imgCount++;
+            const c0=Math.floor(im.tl.col),r0=Math.floor(im.tl.row);
+            const co=Math.round((im.tl.col-c0)*64*E),ro=Math.round((im.tl.row-r0)*20*E);
+            const cx=Math.round(im.ext.width*E),cy=Math.round(im.ext.height*E);
+            drels+=`<Relationship Id="rId${k+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${im.id+1}.${m.ext}"/>`;
+            anchors+=`<xdr:oneCellAnchor><xdr:from><xdr:col>${c0}</xdr:col><xdr:colOff>${co}</xdr:colOff><xdr:row>${r0}</xdr:row><xdr:rowOff>${ro}</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${k+2}" name="Picture ${k+1}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${k+1}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`;
+          });
+          files.push({name:`xl/drawings/drawing${n}.xml`,data:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${anchors}</xdr:wsDr>`)});
+          files.push({name:`xl/drawings/_rels/drawing${n}.xml.rels`,data:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${drels}</Relationships>`)});
+          files.push({name:`xl/worksheets/_rels/sheet${n}.xml.rels`,data:enc.encode(sheetRels)});
+          ct.push(`<Override PartName="/xl/drawings/drawing${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`);
+        }
+        const dim=`<dimension ref="A1:${colName(maxC)}${maxR}"/>`;
+        files.push({name:`xl/worksheets/sheet${n}.xml`,data:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${dim}${sv}<sheetFormatPr defaultRowHeight="15"/>${cols}<sheetData>${sd}</sheetData>${tail}</worksheet>`)});
+        ct.push(`<Override PartName="/xl/worksheets/sheet${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
+        wbRels.push(`<Relationship Id="rId${n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${n}.xml"/>`);
+        sheetsXml.push(`<sheet name="${esc(ws.name)}" sheetId="${n}" r:id="rId${n}"/>`);
+      });
+      this.media.forEach((m,i)=>files.push({name:`xl/media/image${i+1}.${m.ext}`,data:m.data}));
+      const N=this.sheets.length;
+      wbRels.push(`<Relationship Id="rId${N+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`);
+      const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${numFmts.length?`<numFmts count="${numFmts.length}">${numFmts.map((f,i)=>`<numFmt numFmtId="${164+i}" formatCode="${esc(f)}"/>`).join("")}</numFmts>`:""}<fonts count="${fonts.length}">${fonts.join("")}</fonts><fills count="${fills.length}">${fills.join("")}</fills><borders count="${borders.length}">${borders.join("")}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length}">${xfs.join("")}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="${dxfs.length}">${dxfs.join("")}</dxfs></styleSheet>`;
+      const head=[
+        {name:"[Content_Types].xml",data:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${ct.join("")}</Types>`)},
+        {name:"_rels/.rels",data:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`)},
+        {name:"xl/workbook.xml",data:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets>${sheetsXml.join("")}</sheets>${defNames.length?`<definedNames>${defNames.join("")}</definedNames>`:""}<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`)},
+        {name:"xl/_rels/workbook.xml.rels",data:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${wbRels.join("")}</Relationships>`)},
+        {name:"xl/styles.xml",data:enc.encode(styles)},
+      ];
+      return zip([...head,...files]);
+    }
+  }
+
+  /* ---- reader: returns {rows:[[v...]], images:{rowNumber:{data,ext}}} for one sheet ---- */
+  async function inflate(u){const ds=new DecompressionStream("deflate-raw");const s=new Blob([u]).stream().pipeThrough(ds);return new Uint8Array(await new Response(s).arrayBuffer())}
+  async function unzip(buf){
+    const u=new Uint8Array(buf),dv=new DataView(buf),out={};
+    let e=u.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;if(e<0)throw new Error("not zip");
+    const cnt=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const dec=new TextDecoder();
+    for(let i=0;i<cnt;i++){
+      const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+      const name=dec.decode(u.subarray(p+46,p+46+nl));
+      const lnl=dv.getUint16(lo+26,true),lxl=dv.getUint16(lo+28,true),start=lo+30+lnl+lxl;
+      const raw=u.subarray(start,start+csize);
+      out[name]={method,raw};p+=46+nl+xl+cl;
+    }
+    return {list:Object.keys(out),get:async n=>{const f=out[n];if(!f)return null;return f.method===0?f.raw:await inflate(f.raw)}};
+  }
+  const xmlDoc=async(z,n)=>{const u=await z.get(n);return u?new DOMParser().parseFromString(new TextDecoder().decode(u),"application/xml"):null};
+  const byTag=(el,t)=>[...el.getElementsByTagName("*")].filter(x=>x.localName===t);
+  const relMap=async(z,n)=>{const d=await xmlDoc(z,n),m={};if(d)byTag(d,"Relationship").forEach(r=>m[r.getAttribute("Id")]=r.getAttribute("Target"));return m};
+  const resolve=(base,t)=>{if(t.startsWith("/"))return t.slice(1);const parts=base.split("/");parts.pop();for(const s of t.split("/")){if(s==="..")parts.pop();else if(s!==".")parts.push(s)}return parts.join("/")};
+  async function readSheet(buf,wanted){
+    const z=await unzip(buf);
+    const wb=await xmlDoc(z,"xl/workbook.xml"),rels=await relMap(z,"xl/_rels/workbook.xml.rels");
+    const sh=byTag(wb,"sheet").find(s=>s.getAttribute("name")===wanted)||byTag(wb,"sheet").find(s=>s.getAttribute("name").includes(wanted));
+    if(!sh)return null;
+    const rid=sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")||sh.getAttribute("r:id");
+    const path=resolve("xl/workbook.xml",rels[rid]);
+    const ssd=await xmlDoc(z,"xl/sharedStrings.xml");
+    const ss=ssd?byTag(ssd,"si").map(si=>byTag(si,"t").map(t=>t.textContent).join("")):[];
+    const doc=await xmlDoc(z,path),rows=[];
+    byTag(doc,"row").forEach(r=>{
+      const rn=+r.getAttribute("r"),arr=[];
+      byTag(r,"c").forEach(c=>{
+        const {c:ci}=parseRef(c.getAttribute("r")),t=c.getAttribute("t");
+        const vEl=byTag(c,"v")[0],isEl=byTag(c,"is")[0];let v=null;
+        if(t==="s")v=ss[+vEl.textContent];else if(t==="inlineStr")v=isEl?byTag(isEl,"t").map(x=>x.textContent).join(""):"";
+        else if(t==="str"||t==="b"||t==="e")v=vEl?vEl.textContent:null;else if(vEl)v=+vEl.textContent;
+        arr[ci-1]=v;
+      });
+      rows[rn]=arr;
+    });
+    const images={};
+    const srels=await relMap(z,path.replace(/([^/]+)$/,"_rels/$1.rels"));
+    const dEl=byTag(doc,"drawing")[0];
+    if(dEl){
+      const dp=resolve(path,srels[dEl.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")]);
+      const dd=await xmlDoc(z,dp),drels=await relMap(z,dp.replace(/([^/]+)$/,"_rels/$1.rels"));
+      for(const a of [...byTag(dd,"oneCellAnchor"),...byTag(dd,"twoCellAnchor")]){
+        const from=byTag(a,"from")[0],blip=byTag(a,"blip")[0];if(!from||!blip)continue;
+        const row=+byTag(from,"row")[0].textContent+1;
+        const tgt=resolve(dp,drels[blip.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","embed")]);
+        const data=await z.get(tgt);if(data)images[row]={data,ext:/\.png$/i.test(tgt)?"png":"jpeg"};
+      }
+    }
+    return {rows,images};
+  }
+  return {Workbook,readSheet};
+})();
+const ExcelJS={Workbook:XL.Workbook};
+
+/* ---------- Excel (ExcelJS) ---------- */
+const serial=s=>{const [y,m,d]=s.split("-").map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/864e5};
+const MONEY='"RM "#,##0.00', DATE="yyyy-mm-dd";
+const RED="FFD9534F", GREEN="FF2E9D6A", INK="FF1F1D1A";
+const PALETTE=["#E4572E","#F3A712","#4C9F70","#3E7CB1","#8E5EA2","#E07A9B","#29A3A3","#A0743B","#6C757D","#B5BD3A"];
+const catLabel=(t,c)=>icon(t,c)+" "+c;
+function styleHeader(ws,color){
+  const r=ws.getRow(1);r.height=24;
+  r.eachCell(c=>{c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:color||"FF3B3833"}};c.alignment={vertical:"middle",horizontal:"center"}});
+}
+function b64(buf){let s="";const u=new Uint8Array(buf);for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
+const fill=argb=>({type:"pattern",pattern:"solid",fgColor:{argb}});
+
+/* chart images drawn on canvas */
+function canvasPNG(c){return c.toDataURL("image/png").split(",")[1]}
+function mkCanvas(w,h){const c=document.createElement("canvas"),k=2;c.width=w*k;c.height=h*k;const g=c.getContext("2d");g.scale(k,k);g.fillStyle="#fff";g.fillRect(0,0,w,h);g.textBaseline="middle";return [c,g]}
+const FONT='"PingFang HK","Noto Sans HK","Microsoft JhengHei",sans-serif';
+function pieChart(title,data){ // data: [[label,value]]
+  const W=640,H=Math.max(360,90+data.length*30),[c,g]=mkCanvas(W,H);
+  g.fillStyle="#1f1d1a";g.font=`bold 20px ${FONT}`;g.fillText(title,24,30);
+  const tot=data.reduce((s,d)=>s+d[1],0)||1, cx=170, cy=H/2+18, R=125, r=68;
+  let a=-Math.PI/2;
+  data.forEach((d,i)=>{const s=d[1]/tot*Math.PI*2;g.beginPath();g.moveTo(cx,cy);g.arc(cx,cy,R,a,a+s);g.closePath();g.fillStyle=PALETTE[i%PALETTE.length];g.fill();a+=s});
+  g.beginPath();g.arc(cx,cy,r,0,Math.PI*2);g.fillStyle="#fff";g.fill();
+  g.textAlign="center";g.fillStyle="#7a746b";g.font=`13px ${FONT}`;g.fillText("總支出",cx,cy-12);
+  g.fillStyle="#1f1d1a";g.font=`bold 17px ${FONT}`;g.fillText(fmt(tot),cx,cy+12);g.textAlign="left";
+  const lx=330;let ly=cy-data.length*15+15;
+  data.forEach((d,i)=>{
+    g.fillStyle=PALETTE[i%PALETTE.length];g.fillRect(lx,ly-8,16,16);
+    g.fillStyle="#1f1d1a";g.font=`15px ${FONT}`;g.fillText(d[0],lx+26,ly);
+    g.textAlign="right";g.fillText(Math.round(d[1]/tot*100)+"%",W-130,ly);
+    g.fillStyle="#7a746b";g.fillText(fmt(d[1]),W-20,ly);g.textAlign="left";ly+=30;
+  });
+  return {b:canvasPNG(c),w:W,h:H};
+}
+function barChart(title,labels,ins,outs){
+  const W=640,H=340,[c,g]=mkCanvas(W,H),L=70,Rt=20,T=70,B=44,pw=W-L-Rt,ph=H-T-B;
+  g.fillStyle="#1f1d1a";g.font=`bold 20px ${FONT}`;g.fillText(title,24,30);
+  [["支出","#D9534F"],["收入","#2E9D6A"]].forEach(([t,col],i)=>{g.fillStyle=col;g.fillRect(W-170+i*80,24,14,14);g.fillStyle="#1f1d1a";g.font=`14px ${FONT}`;g.fillText(t,W-150+i*80,31)});
+  const mx=Math.max(1,...ins,...outs), step=Math.pow(10,Math.floor(Math.log10(mx))), top=Math.ceil(mx/step)*step;
+  g.font=`12px ${FONT}`;g.textAlign="right";
+  for(let i=0;i<=4;i++){const v=top*i/4,y=T+ph-ph*i/4;g.strokeStyle="#eee";g.beginPath();g.moveTo(L,y);g.lineTo(W-Rt,y);g.stroke();g.fillStyle="#7a746b";g.fillText(v>=1000?(v/1000).toFixed(v%1000?1:0)+"k":String(Math.round(v)),L-8,y)}
+  const n=labels.length,bw=pw/n,inner=Math.min(bw*0.8,40),each=inner/2;
+  g.textAlign="center";
+  labels.forEach((lb,i)=>{
+    const x0=L+i*bw+(bw-inner)/2;
+    const ho=outs[i]/top*ph,hi=ins[i]/top*ph;
+    g.fillStyle="#D9534F";g.fillRect(x0,T+ph-ho,each-1,ho);
+    g.fillStyle="#2E9D6A";g.fillRect(x0+each,T+ph-hi,each-1,hi);
+    if(n<=16||i%Math.ceil(n/16)===0){g.fillStyle="#7a746b";g.fillText(lb,L+i*bw+bw/2,T+ph+16)}
+  });
+  return {b:canvasPNG(c),w:W,h:H};
+}
+
+async function buildBook(items,title){
+  const wb=new ExcelJS.Workbook(); wb.creator="我的記帳本";
+  const n=items.length, last=Math.max(n+1,2);
+  const R=c=>`'明細'!$${c}$2:$${c}$${last}`, D=R("A"),T=R("B"),C=R("C"),A=R("E");
+  let tin=0,tout=0;items.forEach(([,e])=>e.type==="in"?tin+=e.amount:tout+=e.amount);
+  const days=new Set(items.filter(([,e])=>e.type==="out").map(([,e])=>e.date)).size;
+
+  /* ===== 摘要 ===== */
+  const s0=wb.addWorksheet("📊 摘要",{views:[{showGridLines:false}]});
+  s0.columns=[{width:4},{width:24},{width:20},{width:4}];
+  s0.mergeCells("B1:C1");
+  const t=s0.getCell("B1");t.value="📒 "+title;t.font={bold:true,size:16};s0.getRow(1).height=34;
+  const kpi=[
+    ["💰 總收入",{formula:`SUMIFS(${A},${T},"收入")`,result:tin},MONEY,GREEN,"FFE8F5EE"],
+    ["💸 總支出",{formula:`SUMIFS(${A},${T},"支出")`,result:tout},MONEY,RED,"FFFBEAEA"],
+    ["🏦 結餘",{formula:"C3-C4",result:tin-tout},MONEY,INK,"FFF3F1EC"],
+    ["🐷 儲蓄率",{formula:"IF(C3=0,0,C5/C3)",result:tin?(tin-tout)/tin:0},"0.0%",INK,"FFF3F1EC"],
+    ["🧾 記錄筆數",{formula:`COUNTA(${T})`,result:n},"0",INK,"FFFFFFFF"],
+    ["📅 有支出嘅日數",days,"0",INK,"FFFFFFFF"],
+    ["📉 平均每日支出",{formula:"IF(C8=0,0,C4/C8)",result:days?tout/days:0},MONEY,INK,"FFFFFFFF"],
+    ["📷 有收據相嘅筆數",items.filter(([,e])=>e.photo).length,"0",INK,"FFFFFFFF"],
+  ];
+  const border={top:{style:"thin",color:{argb:"FFE8E3DA"}},bottom:{style:"thin",color:{argb:"FFE8E3DA"}}};
+  kpi.forEach((k,i)=>{
+    const row=s0.getRow(i+3);row.height=i<4?28:22;
+    const a=row.getCell(2),b=row.getCell(3);
+    a.value=k[0];b.value=k[1];b.numFmt=k[2];
+    a.font={size:i<4?13:11,color:{argb:"FF5A554D"}};b.font={bold:true,size:i<4?14:11,color:{argb:k[3]}};
+    b.alignment={horizontal:"right",vertical:"middle"};a.alignment={vertical:"middle"};
+    a.fill=b.fill=fill(k[4]);a.border=b.border=border;
+  });
+  // 結餘 colour follows sign
+  s0.addConditionalFormatting({ref:"C5",rules:[
+    {type:"expression",formulae:["C5<0"],style:{font:{bold:true,color:{argb:RED}}}},
+    {type:"expression",formulae:["C5>0"],style:{font:{bold:true,color:{argb:GREEN}}}}]});
+  s0.getCell("B12").value="💡 圖表係下載嗰陣嘅數字；改「明細」之後上面啲數會自動更新，圖表就唔會。";
+  s0.getCell("B12").font={size:10,italic:true,color:{argb:"FF8A847A"}};
+
+  // charts
+  const byCat={};items.forEach(([,e])=>{if(e.type==="out")byCat[e.cat]=(byCat[e.cat]||0)+e.amount});
+  let rowAt=13;
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>[catLabel("out",c),v]);
+  const place=(img)=>{
+    const id=wb.addImage({base64:img.b,extension:"png"});
+    const w=Math.round(img.w*0.85),h=Math.round(img.h*0.85);
+    s0.addImage(id,{tl:{col:1,row:rowAt},ext:{width:w,height:h},editAs:"oneCell"});
+    rowAt+=Math.ceil(h/20)+1;
+  };
+  if(cats.length)place(pieChart("🍩 支出分類",cats));
+  const months=[...new Set(items.map(([,e])=>e.date.slice(0,7)))].sort();
+  if(months.length>1){
+    const ins=months.map(m=>items.filter(([,e])=>e.type==="in"&&e.date.startsWith(m)).reduce((s,[,e])=>s+e.amount,0));
+    const outs=months.map(m=>items.filter(([,e])=>e.type==="out"&&e.date.startsWith(m)).reduce((s,[,e])=>s+e.amount,0));
+    place(barChart("📈 每月收支",months.map(m=>+m.slice(5)+"月"),ins,outs));
+  }else if(items.length){
+    const [y,m]=months[0].split("-").map(Number),dim=new Date(y,m,0).getDate(),lbl=[],ins=[],outs=[];
+    for(let d=1;d<=dim;d++){const ds=months[0]+"-"+pad(d);lbl.push(String(d));
+      ins.push(items.filter(([,e])=>e.type==="in"&&e.date===ds).reduce((s,[,e])=>s+e.amount,0));
+      outs.push(items.filter(([,e])=>e.type==="out"&&e.date===ds).reduce((s,[,e])=>s+e.amount,0));}
+    place(barChart("📈 每日收支",lbl,ins,outs));
+  }
+
+  /* ===== 分類統計 ===== */
+  const s2=wb.addWorksheet("🗂️ 分類統計");
+  s2.columns=[{header:"類型",width:8},{header:"分類",width:13},{header:"金額",width:15},{header:"佔比",width:9},{header:"筆數",width:7},{header:"比例圖",width:24}];
+  styleHeader(s2);
+  ["out","in"].forEach(tp=>{
+    const zh=TYPE_ZH[tp], tot=tp==="in"?tin:tout;
+    CATS[tp].forEach(([c])=>{
+      const its=items.filter(([,e])=>e.type===tp&&e.cat===c);if(!its.length)return;
+      const v=its.reduce((s,[,e])=>s+e.amount,0), r=s2.rowCount+1, lab=catLabel(tp,c), pct=tot?v/tot:0;
+      const row=s2.addRow([zh,lab,
+        {formula:`SUMIFS(${A},${T},"${zh}",${C},"${lab}")`,result:v},
+        {formula:`IFERROR(C${r}/SUMIFS(${A},${T},"${zh}"),0)`,result:pct},
+        {formula:`COUNTIFS(${T},"${zh}",${C},"${lab}")`,result:its.length},
+        {formula:`REPT("█",ROUND(D${r}*20,0))`,result:"█".repeat(Math.round(pct*20))}]);
+      const col=tp==="in"?GREEN:RED;
+      row.getCell(1).font={bold:true,color:{argb:col}};
+      row.getCell(3).numFmt=MONEY;row.getCell(4).numFmt="0%";row.getCell(6).font={color:{argb:col}};
+      row.height=20;
+    });
+  });
+
+  /* ===== 每日 ===== */
+  const s3=wb.addWorksheet("📅 每日");
+  s3.columns=[{header:"日期",width:12},{header:"星期",width:6},{header:"💰 收入",width:13},{header:"💸 支出",width:13},{header:"淨額",width:14},{header:"累計結餘",width:14},{header:"支出圖",width:20}];
+  styleHeader(s3);
+  const ds=[...new Set(items.map(([,e])=>e.date))].sort(), dl=Math.max(ds.length+1,2); let run=0;
+  const maxOut=Math.max(1,...ds.map(d=>items.filter(([,e])=>e.date===d&&e.type==="out").reduce((s,[,e])=>s+e.amount,0)));
+  ds.forEach((d,i)=>{
+    const r=i+2;
+    const ti=items.filter(([,e])=>e.date===d&&e.type==="in").reduce((s,[,e])=>s+e.amount,0);
+    const to=items.filter(([,e])=>e.date===d&&e.type==="out").reduce((s,[,e])=>s+e.amount,0);
+    run+=ti-to;
+    const row=s3.addRow([serial(d),"週"+WD[new Date(d+"T00:00").getDay()],
+      {formula:`SUMIFS(${A},${T},"收入",${D},A${r})`,result:ti},
+      {formula:`SUMIFS(${A},${T},"支出",${D},A${r})`,result:to},
+      {formula:`C${r}-D${r}`,result:ti-to},
+      {formula:i?`F${r-1}+E${r}`:`E${r}`,result:run},
+      {formula:`REPT("█",ROUND(D${r}/MAX($D$2:$D$${dl})*15,0))`,result:"█".repeat(Math.round(to/maxOut*15))}]);
+    row.getCell(1).numFmt=DATE;[3,4,5,6].forEach(c=>row.getCell(c).numFmt=MONEY);
+    row.getCell(3).font={color:{argb:GREEN}};row.getCell(4).font={color:{argb:RED}};row.getCell(7).font={color:{argb:RED}};
+    const wd=new Date(d+"T00:00").getDay();if(wd===0||wd===6)row.getCell(2).font={bold:true,color:{argb:"FF3E7CB1"}};
+  });
+  if(ds.length){
+    const rules=c=>[{type:"expression",formulae:[`${c}2<0`],style:{font:{color:{argb:RED}}}},{type:"expression",formulae:[`${c}2>0`],style:{font:{color:{argb:GREEN}}}}];
+    s3.addConditionalFormatting({ref:`E2:E${dl}`,rules:rules("E")});
+    s3.addConditionalFormatting({ref:`F2:F${dl}`,rules:rules("F")});
+  }
+  s3.views=[{state:"frozen",ySplit:1}];
+
+  /* ===== 明細 (with receipt photos) ===== */
+  const s1=wb.addWorksheet("明細");
+  s1.columns=[{header:"日期",width:12},{header:"類型",width:7},{header:"分類",width:12},{header:"備註",width:26},{header:"金額",width:14},{header:"🧾 收據",width:22}];
+  styleHeader(s1);
+  const BOX_W=150, BOX_H=190;
+  for(let i=0;i<n;i++){
+    const [id,e]=items[i];
+    const row=s1.addRow([serial(e.date),TYPE_ZH[e.type],catLabel(e.type,e.cat),e.note||"",e.amount,e.photo?"":"—"]);
+    const col=e.type==="in"?GREEN:RED;
+    row.getCell(1).numFmt=DATE;row.getCell(5).numFmt=MONEY;
+    row.getCell(2).font={bold:true,color:{argb:col}};row.getCell(5).font={color:{argb:col}};
+    row.getCell(6).alignment={horizontal:"center",vertical:"middle"};
+    row.alignment={vertical:"middle",wrapText:true};
+    if(i%2)row.eachCell({includeEmpty:true},c=>{c.fill=fill("FFFAF8F4")});
+    if(e.photo){
+      let bytes=null;
+      try{const blob=await photoGet(id);if(blob)bytes=await blob.arrayBuffer()}catch(x){bytes=null}
+      if(bytes){
+        const imgId=wb.addImage({buffer:bytes,extension:"jpeg"});
+        let w=e.pw||BOX_W,h=e.ph||BOX_H;const k=Math.min(BOX_W/w,BOX_H/h);w=Math.round(w*k);h=Math.round(h*k);
+        row.height=Math.ceil((BOX_H+8)*0.75);
+        s1.addImage(imgId,{tl:{col:5.05,row:i+1.03},ext:{width:w,height:h},editAs:"oneCell"});
+      }else row.getCell(6).value="（相讀唔到，請喺 app 重新加）";
+    }
+  }
+  s1.autoFilter={from:"A1",to:`F${Math.max(n+1,1)}`};
+  s1.views=[{state:"frozen",ySplit:1}];
+  return await wb.xlsx.writeBuffer();
+}
+
+let pendingFile=null;
+async function offer(filename,buf){
+  const blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  pendingFile={filename,blob};
+  const box=$("xlmsg");box.textContent="";
+  const b=document.createElement("button");b.className="xl";b.style.marginTop="4px";b.textContent="📥 儲存 "+filename;
+  b.onclick=()=>saveFile(b);box.appendChild(b);
+  const t=document.createElement("div");t.textContent="Excel 已準備好，撳上面儲存（可揀「儲存到檔案」）";t.style.marginTop="6px";box.appendChild(t);
+}
+async function saveFile(btn){
+  if(!pendingFile)return;const {filename,blob}=pendingFile;
+  const file=new File([blob],filename,{type:blob.type});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:filename});$("xlmsg").textContent="已儲存 "+filename+" ✓";pendingFile=null;return}
+  }catch(e){if(e&&e.name==="AbortError"){return}}
+  const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=filename;a.style.display="none";document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),1000);
+  setTimeout(()=>URL.revokeObjectURL(u),60000);
+  $("xlmsg").textContent="已下載 "+filename+" ✓";pendingFile=null;
+}
+const sortedItems=f=>Object.entries(entries).filter(([,e])=>f(e)).sort((a,b)=>a[1].date.localeCompare(b[1].date)||(a[1].ts||0)-(b[1].ts||0));
+async function doExport(btn,items,name,title){
+    if(!items.length){say("冇記錄可以下載");return}
+  const label=btn.textContent;btn.disabled=true;btn.textContent="整緊 Excel…";$("xlmsg").textContent="⏳ 整緊 Excel，請稍等…";
+  try{await offer(name,await buildBook(items,title))}
+  catch(e){say("整 Excel 時出錯："+(e&&e.message||e))}
+  btn.disabled=false;btn.textContent=label;
+}
+$("xl").onclick=()=>{
+  const ym=cur.getFullYear()+"-"+pad(cur.getMonth()+1);
+  doExport($("xl"),sortedItems(e=>e.date.startsWith(ym)),`記帳_${ym}.xlsx`,`${cur.getFullYear()}年${cur.getMonth()+1}月 收支摘要`);
+};
+$("xlall").onclick=()=>doExport($("xlall"),sortedItems(()=>true),`記帳_全部備份_${todayStr()}.xlsx`,"全部記錄 收支摘要");
+
+/* ---------- import backup (incl. photos) ---------- */
+$("imp").onchange=async ev=>{
+  const f=ev.target.files[0];ev.target.value="";if(!f)return;
+  say("匯入緊…");
+  try{
+    const sh=await XL.readSheet(await f.arrayBuffer(),"明細");if(!sh)throw 0;
+    const have=new Set(Object.values(entries).map(e=>[e.date,e.type,e.cat,e.note||"",e.amount].join("|")));
+    let added=0,photos=0;
+    for(let r=2;r<sh.rows.length;r++){
+      const row=sh.rows[r];if(!row)continue;
+      const [d,t,c,note,amtRaw]=row,amt=+amtRaw;
+      if(d==null||!t||!(amt>0))continue;
+      let ds;
+      if(typeof d==="number"){const x=new Date(Date.UTC(1899,11,30)+Math.round(d)*864e5);ds=x.getUTCFullYear()+"-"+pad(x.getUTCMonth()+1)+"-"+pad(x.getUTCDate())}
+      else ds=String(d).slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(ds))continue;
+      const tp=String(t).includes("收入")?"in":"out";
+      const x=String(c||"其他").trim(),m=CATS[tp].find(([nm])=>x===nm||x.endsWith(" "+nm));
+      const e={type:tp,cat:m?m[0]:(x.replace(/^\S+\s+/,"")||"其他"),note:String(note||""),amount:Math.round(amt*100)/100,date:ds,ts:Date.now()+r};
+      const key=[e.date,e.type,e.cat,e.note,e.amount].join("|");if(have.has(key))continue;have.add(key);
+      const id=newId();
+      const im=sh.images[r];
+      if(im){
+        try{
+          const blob=new Blob([im.data],{type:"image/"+im.ext});
+          const img=await loadImg(blob);await photoPut(id,blob);
+          e.photo=true;e.pw=img.naturalWidth;e.ph=img.naturalHeight;photos++;
+        }catch(x){}
+      }
+      entries[id]=e;added++;
+    }
+    lsSave();render();say(`✅ 匯入咗 ${added} 筆新記錄、${photos} 張收據相（重複嘅已略過）`);
+  }catch(e){say("❌ 讀唔到呢個檔案，請揀由呢度下載嘅 Excel")}
+};
+
+const THEMES=[["cream","🍦 奶油","#f6f4ef","#1f1d1a"],["pink","🌸 粉紅","#fdeef2","#c2456b"],["mint","🌿 薄荷","#e9f6f0","#1f7a5a"],["sky","🌊 天藍","#eaf3fc","#2563a8"],["lav","💜 薰衣草","#f1edfb","#6a4bc4"],["sun","🌼 檸檬","#fdf8e3","#b08a00"],["dark","🌙 深色","#171614","#f1ede6"],["navy","🌌 深藍","#0f1724","#7fb2ff"]];
+const AUTO=["auto","📱 跟系統","linear-gradient(135deg,#f6f4ef 50%,#171614 50%)",""];
+function applyTheme(t){if(t&&t!=="auto")document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
+  try{localStorage.setItem("ledger_theme",t||"auto")}catch(e){}drawThemes()}
+function drawThemes(){
+  const cur=document.documentElement.dataset.theme||"auto",box=$("themes");box.innerHTML="";
+  [AUTO,...THEMES].forEach(([k,n,bg,ac])=>{const b=document.createElement("button");b.className="sw"+(k===cur?" on":"");
+    const i=document.createElement("i");i.style.background=ac?`radial-gradient(circle at 70% 70%, ${ac} 0 28%, ${bg} 30%)`:bg;
+    const l=document.createElement("span");l.textContent=n;b.append(i,l);b.onclick=()=>applyTheme(k);box.appendChild(b)});
+}
+$("themebtn").onclick=()=>$("themes").classList.toggle("on");
+try{applyTheme(localStorage.getItem("ledger_theme")||"auto")}catch(e){applyTheme("auto")}
+init();
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+</body>
+</html>
