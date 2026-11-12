@@ -117,6 +117,12 @@ h1{font-size:20px;white-space:nowrap;margin-right:auto}
 #cats{display:grid;grid-template-columns:minmax(0,max-content) minmax(70px,1fr) 44px;gap:10px 10px;align-items:center;font-size:14px}
 .cat{display:contents!important}
 .cat>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.disc{text-align:center;margin-top:10px}
+.disc button{border:0;background:none;color:var(--sub);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}
+.dsheet h2{font-size:18px;color:var(--ink);margin:0 0 6px}
+.dsheet h3{font-size:14px;margin:14px 0 4px}
+.dsheet p{margin:0;font-size:14px;line-height:1.6;color:var(--ink)}
+.dsheet .btns{margin-top:18px}
 </style>
 </head>
 <body>
@@ -156,9 +162,12 @@ h1{font-size:20px;white-space:nowrap;margin-right:auto}
     </div>
   </div>
   <div class="status" id="status"></div>
+  <div class="disc"><button id="disclink">ⓘ 免責聲明</button></div>
 </div>
 
 <button class="fab" id="add" data-i="add">＋ 記一筆</button>
+
+<div class="mask" id="discm"><div class="sheet dsheet"><h2 id="disct"></h2><div id="discb"></div><div class="btns"><button class="save" id="discx"></button></div></div></div>
 
 <div class="viewer" id="viewer"><img id="vimg" alt=""></div>
 
@@ -381,7 +390,7 @@ function applyLang(){
   $("del").textContent=s.del;$("del").dataset.c="";
   if(statusKey)setStatus(s[statusKey]);
   $("xlmsg").textContent="";
-  drawLangs();drawThemes();render();
+  drawLangs();drawThemes();render();if(typeof drawDisc==="function")drawDisc();
   if($("mask").classList.contains("on"))drawChips();
 }
 function setLang(l){LANG=l;try{localStorage.setItem("ledger_lang",l)}catch(e){}$("langs").classList.remove("on");applyLang()}
@@ -995,6 +1004,44 @@ function drawThemes(){
 $("themebtn").onclick=()=>{$("themes").classList.toggle("on");$("langs").classList.remove("on")};
 $("langbtn").onclick=()=>{$("langs").classList.toggle("on");$("themes").classList.remove("on")};
 try{const th=localStorage.getItem("ledger_theme");if(th&&th!=="auto")document.documentElement.dataset.theme=th}catch(e){}
+
+const DISC={
+zh:{link:"ⓘ 免責聲明",title:"免責聲明",close:"關閉",items:[
+["用途","本記帳本僅供個人記錄日常收支之用，不構成任何財務、稅務、會計或法律建議。如需作出財務決定或處理報稅事宜，請諮詢合資格的專業人士。"],
+["資料儲存","所有記錄、收據照片及設定只儲存在使用者自己的裝置上，不會上傳至任何伺服器。開發者無法查看、存取或救回使用者的任何資料。"],
+["資料遺失","以下情況可能導致資料永久遺失，包括但不限於：刪除主畫面圖示、清除瀏覽器資料、裝置儲存空間不足、裝置遺失或損壞，以及系統或瀏覽器更新。使用者須自行定期下載 Excel 備份。開發者對任何資料遺失概不負責。"],
+["計算結果","本 App 及匯出的 Excel 所顯示的金額、統計和圖表僅供參考。使用者應自行核對數字是否正確。"],
+["收據照片","收據照片經過壓縮處理，畫質可能下降，不能取代收據正本。如需報稅、報銷或作為正式證明，請妥善保存原始收據。"],
+["匯出檔案","使用者下載的 Excel 檔案一經儲存或分享（例如存到 iCloud、傳送給他人），該檔案的保管和私隱責任由使用者自行承擔。"],
+["按現狀提供","本 App 按「現狀」提供，不作任何明示或暗示的保證，包括不保證運作不會中斷或沒有錯誤。網站由 GitHub Pages 託管，可能受第三方服務變動影響。"],
+["聲明的修改","本聲明可能不時更新，恕不另行通知。繼續使用本 App 即表示同意當時的聲明內容。"]]},
+en:{link:"ⓘ Disclaimer",title:"Disclaimer",close:"Close",items:[
+["Purpose","This ledger is intended solely for personal record-keeping of daily income and expenses. It does not constitute financial, tax, accounting or legal advice. Please consult a qualified professional before making financial decisions or handling tax matters."],
+["Data storage","All records, receipt photos and settings are stored only on the user's own device and are never uploaded to any server. The developer cannot view, access or recover any user data."],
+["Data loss","Data may be permanently lost in situations including, but not limited to: deleting the Home Screen icon, clearing browser data, insufficient device storage, loss of or damage to the device, and system or browser updates. Users are responsible for downloading Excel backups regularly. The developer accepts no liability for any loss of data."],
+["Calculations","Amounts, statistics and charts shown in the app and in exported Excel files are for reference only. Users should verify the figures themselves."],
+["Receipt photos","Receipt photos are compressed and their quality may be reduced. They are not a substitute for original receipts. Please keep the original receipts for tax, reimbursement or official purposes."],
+["Exported files","Once an Excel file is saved or shared (for example, saved to iCloud or sent to others), the user is solely responsible for its safekeeping and privacy."],
+["Provided “as is”","This app is provided “as is”, without warranties of any kind, express or implied, including any guarantee of uninterrupted or error-free operation. The site is hosted on GitHub Pages and may be affected by changes to third-party services."],
+["Changes","This disclaimer may be updated from time to time without notice. Continued use of the app constitutes acceptance of the disclaimer in effect at that time."]]},
+ms:{link:"ⓘ Penafian",title:"Penafian",close:"Tutup",items:[
+["Tujuan","Buku akaun ini hanya bertujuan untuk merekod pendapatan dan perbelanjaan harian peribadi. Ia bukan nasihat kewangan, cukai, perakaunan atau undang-undang. Sila dapatkan nasihat profesional yang bertauliah sebelum membuat keputusan kewangan atau menguruskan hal cukai."],
+["Penyimpanan data","Semua rekod, foto resit dan tetapan disimpan dalam peranti pengguna sendiri sahaja dan tidak dimuat naik ke mana-mana pelayan. Pembangun tidak dapat melihat, mengakses atau memulihkan sebarang data pengguna."],
+["Kehilangan data","Data mungkin hilang secara kekal dalam keadaan termasuk tetapi tidak terhad kepada: memadam ikon di Skrin Utama, mengosongkan data pelayar, ruang storan peranti yang tidak mencukupi, peranti hilang atau rosak, serta kemas kini sistem atau pelayar. Pengguna bertanggungjawab memuat turun sandaran Excel secara berkala. Pembangun tidak bertanggungjawab atas sebarang kehilangan data."],
+["Pengiraan","Jumlah, statistik dan carta yang dipaparkan dalam aplikasi dan dalam fail Excel yang dieksport adalah untuk rujukan sahaja. Pengguna hendaklah menyemak sendiri ketepatan angka tersebut."],
+["Foto resit","Foto resit telah dimampatkan dan kualitinya mungkin berkurang. Ia tidak boleh menggantikan resit asal. Sila simpan resit asal untuk tujuan cukai, tuntutan bayaran balik atau bukti rasmi."],
+["Fail yang dieksport","Sebaik sahaja fail Excel disimpan atau dikongsi (contohnya disimpan ke iCloud atau dihantar kepada orang lain), pengguna bertanggungjawab sepenuhnya atas penjagaan dan privasi fail tersebut."],
+["Disediakan “seadanya”","Aplikasi ini disediakan “seadanya”, tanpa sebarang jaminan sama ada nyata atau tersirat, termasuk tiada jaminan bahawa ia akan beroperasi tanpa gangguan atau ralat. Laman ini dihoskan oleh GitHub Pages dan mungkin terjejas oleh perubahan perkhidmatan pihak ketiga."],
+["Pindaan","Penafian ini mungkin dikemas kini dari semasa ke semasa tanpa notis. Penggunaan aplikasi secara berterusan bermakna anda bersetuju dengan penafian yang berkuat kuasa pada masa itu."]]}
+};
+function drawDisc(){
+  const d=DISC[LANG];$("disclink").textContent=d.link;$("disct").textContent=d.title;$("discx").textContent=d.close;
+  const b=$("discb");b.innerHTML="";
+  d.items.forEach(([h,p],i)=>{const h3=document.createElement("h3");h3.textContent=(i+1)+". "+h;const pp=document.createElement("p");pp.textContent=p;b.append(h3,pp)});
+}
+$("disclink").onclick=()=>{drawDisc();$("discm").classList.add("on");document.querySelector("#discm .sheet").scrollTop=0};
+$("discx").onclick=()=>$("discm").classList.remove("on");
+$("discm").onclick=e=>{if(e.target===$("discm"))$("discm").classList.remove("on")};
 
 init();
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
